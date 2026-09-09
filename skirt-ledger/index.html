@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<title>裙子账本</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#FDF7F5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="裙子账本">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css?v=8">
+</head>
+<body>
+
+<header class="topbar" id="topbar">
+  <div class="topbar-inner">
+    <h1 class="brand">裙子账本</h1>
+    <button class="ghost-btn" id="btn-backup" type="button">备份</button>
+  </div>
+</header>
+
+<main id="view-closet" class="view">
+  <section class="summary" id="summary"></section>
+
+  <div class="toolbar">
+    <input type="search" id="search" placeholder="搜名字、品牌、颜色…" autocomplete="off">
+    <button class="sort-btn" id="btn-sort" type="button">最新</button>
+  </div>
+
+  <div class="chips" id="chips"></div>
+
+  <div class="grid" id="grid"></div>
+  <div class="empty hidden" id="empty"></div>
+</main>
+
+<main id="view-stats" class="view hidden">
+  <section class="stat-hero" id="stat-hero"></section>
+  <section class="card">
+    <h2 class="card-title">按类型</h2>
+    <div id="chart-type" class="bars"></div>
+  </section>
+  <section class="card">
+    <h2 class="card-title">近 6 个月花了多少</h2>
+    <div id="chart-month" class="columns"></div>
+  </section>
+  <section class="card">
+    <h2 class="card-title">待付尾款</h2>
+    <p class="card-sub">还没付出去的钱，按欠得最多的排</p>
+    <div id="chart-due" class="bars"></div>
+  </section>
+  <section class="card">
+    <h2 class="card-title">颜色分布</h2>
+    <div id="chart-color" class="swatches"></div>
+  </section>
+  <section class="card">
+    <h2 class="card-title">配饰明细</h2>
+    <p class="card-sub">按金额从高到低，配饰不算进裙子总价</p>
+    <div id="chart-acc" class="bars"></div>
+  </section>
+  <section class="card danger-zone">
+    <h2 class="card-title">数据</h2>
+    <div class="row-actions">
+      <button class="pill" id="btn-export" type="button">导出备份</button>
+      <button class="pill" id="btn-import" type="button">导入备份</button>
+      <button class="pill warn" id="btn-clear" type="button">清空全部</button>
+    </div>
+    <p class="tiny" id="storage-info" style="margin:12px 0 8px"></p>
+    <div class="row-actions">
+      <button class="pill" id="btn-slim" type="button">压缩照片腾空间</button>
+    </div>
+    <p class="tiny">数据只存在这台手机的浏览器里，不会上传。换手机或清缓存前记得导出一次。当前版本 <b id="app-ver">—</b>。</p>
+  </section>
+</main>
+
+<main id="view-add" class="view">
+  <form id="form" class="form" autocomplete="off">
+    <input type="hidden" id="f-id">
+
+    <div class="photo-picker">
+      <div class="photo-box" id="photo-box">
+        <span class="photo-hint" id="photo-hint">
+          <span class="photo-emoji">👗</span>
+          <span>给它配张图，不配也行</span>
+        </span>
+        <img id="photo-preview" alt="" class="hidden">
+      </div>
+      <div class="photo-actions">
+        <button type="button" class="photo-btn" id="btn-cam">📷 拍照</button>
+        <button type="button" class="photo-btn" id="btn-lib">🖼 从图库选</button>
+        <button type="button" class="photo-btn danger hidden" id="btn-photo-remove">移除</button>
+      </div>
+    </div>
+    <input type="file" id="f-photo-cam" accept="image/*" capture="environment" class="hidden">
+    <input type="file" id="f-photo-lib" accept="image/*" class="hidden">
+
+    <label class="field">
+      <span>名字 <i class="req">*</i></span>
+      <input type="text" id="f-name" placeholder="比如：蓝色碎花长裙" maxlength="30" required>
+    </label>
+
+    <div class="field">
+      <span>款式 <small style="color:var(--muted);font-weight:400">（同一系列可一次登记多条，每行一条）</small></span>
+      <div class="acc-box" id="stl-box">
+        <div id="stl-list"></div>
+        <button type="button" class="add-link" id="btn-add-stl">＋ 再加一个款式</button>
+        <div class="acc-total"><span>本系列合计</span><b id="stl-total">¥0</b></div>
+        <div id="stl-count" style="font-size:12px;color:var(--muted);margin-top:6px"></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <span>类型</span>
+      <div class="chips pick" id="pick-type"></div>
+    </div>
+
+    <div class="field">
+      <span>颜色（同款不同色可多选，一次录多条）</span>
+      <div class="chips pick" id="pick-color"></div>
+    </div>
+
+    <div class="two">
+      <label class="field">
+        <span>购买日期</span>
+        <input type="date" id="f-date">
+      </label>
+      <label class="field">
+        <span>品牌 / 店家</span>
+        <input type="text" id="f-brand" placeholder="选填" maxlength="20">
+      </label>
+    </div>
+
+    <label class="field">
+      <span>备注</span>
+      <textarea id="f-note" rows="2" placeholder="场合、搭配、为什么买…选填" maxlength="120"></textarea>
+    </label>
+
+    <div class="field">
+      <span>有没有配饰</span>
+      <div class="seg" id="seg-acc">
+        <button type="button" class="seg-btn on" data-v="no">否</button>
+        <button type="button" class="seg-btn" data-v="yes">有</button>
+      </div>
+    </div>
+
+    <div class="acc-box hidden" id="acc-box">
+      <div id="acc-list"></div>
+      <button type="button" class="add-link" id="btn-add-acc">＋ 再加一个配饰</button>
+      <div class="acc-total"><span>配饰合计</span><b id="acc-total">¥0</b></div>
+    </div>
+
+    <div class="submit-bar">
+      <button type="button" class="pill ghost" id="btn-cancel">取消</button>
+      <button type="submit" class="pill primary" id="btn-save">保存</button>
+    </div>
+  </form>
+</main>
+
+<nav class="tabbar" id="tabbar">
+  <button class="tab active" data-view="closet" type="button"><span>👗</span>衣柜</button>
+  <button class="tab" data-view="stats" type="button"><span>📊</span>统计</button>
+  <button class="tab" data-view="add" type="button"><span>➕</span>记一条</button>
+</nav>
+
+<div class="sheet-mask hidden" id="sheet-mask"></div>
+<div class="sheet hidden" id="sheet"></div>
+
+<div class="toast" id="toast"></div>
+
+<input type="file" id="import-file" accept="application/json" class="hidden">
+
+<script src="app.js?v=8"></script>
+</body>
+</html>
